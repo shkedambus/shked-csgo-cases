@@ -8,8 +8,8 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine('sqlite:///csgo.db?check_same_thread=False')
 Base = declarative_base()
 
-class Table(Base):
-    __tablename__ = 'task'
+class CSGO_Item(Base):
+    __tablename__ = 'csgo_items'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     rarity = Column(String)
@@ -22,7 +22,16 @@ class Table(Base):
 
 
     def __repr__(self):
-        return self.string_field
+        return '''<Item(name={name},
+                     rarity={rarity},
+                     quality={quality},
+                     stattrak={stattrak},
+                     case={case}>'''\
+            .format(name=self.name,
+                    rarity=self.rarity,
+                    quality=self.quality,
+                    stattrak = self.stattrak,
+                    case=self.case)
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
@@ -48,14 +57,14 @@ with open("response.json", "r", encoding="utf8") as json_file:
             for key_name in action.keys():
                 if action[key_name] == "Inspect in Game...":
                     inspect_url = action["link"]
-        stattrack = "StatTrak" in key
+        stattrak = "StatTrak" in key
         search = re.search(pattern, key)
         if search:
-            item_name = search.group(1)
-        new_row = Table(name=item_name,
+            item_name = search.group(1).strip()
+        new_row = CSGO_Item(name=item_name,
                         rarity=item_rarity,
                         quality=item_quality,
-                        stattrak=stattrack,
+                        stattrak=stattrak,
                         case=item_case,
                         image_url=item_image,
                         inspect_url=inspect_url)

@@ -1,6 +1,6 @@
 from random import choices
 
-rarity = {"Mil-Spec":0.7981,
+rarity = {"Mil-Spec Grade":0.7981,
           "Restricted":0.1626,
           "Classified":0.0315,
           "Covert":0.0078}
@@ -21,4 +21,4 @@ def get_item(case=None):
     weapon_rarity = roll(rarity)
     weapon_quality = roll(quality)
     weapon_stattrack = roll(stattrack)
-    print(weapon_rarity, weapon_quality, weapon_stattrack)
+    return weapon_rarity, weapon_quality, weapon_stattrack
