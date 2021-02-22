@@ -2,12 +2,12 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, delete
 from sqlalchemy.orm import sessionmaker
 import re
 
 from chances_csgo import roll, get_item
-from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info, add_user_info
+from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info, add_user_info, User_prices
 
 cases = ["The Wildfire Collection",
             "The eSports 2013 Winter Collection",
@@ -91,6 +91,19 @@ def get_price(row):
     price_row = session.query(Item_price).filter(Item_price.name == correct_name).first()
     return price_row.price
 
+def count_inventory(unique_user):
+    inventory_price = 0
+    new_rows = session.query(User_info).filter(User_info.user == str(unique_user)).all()
+    if new_rows:
+        for new_row in new_rows:
+            other_row = session.query(Item_price).filter(Item_price.name == new_row.item).first()
+            inventory_price += other_row.price
+    added_row = User_prices(user=str(unique_user), price=inventory_price)
+    session.add(added_row)
+    session.commit()
+    return inventory_price
+
+
 # Commands
 @bot.command()
 async def open_case(ctx, user_case=""):
@@ -134,6 +147,50 @@ async def open_case(ctx, user_case=""):
                                  .format(author=author, case=row.case), icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
         my_embed.set_image(url=url)
         await ctx.send(embed=my_embed)
+
+@bot.command()
+async def inventory_prices(ctx):
+    message = ctx.message
+    author = message.author
+    user_rows = session.query(User_info).all()
+    users = []
+    for user_row in user_rows:
+        users.append(user_row.user)
+    individual_users = set(users)
+    users_list = list(individual_users)
+    for unique_user in users_list:
+        stmt = delete(User_prices).where(User_prices.user == unique_user).execution_options(synchronize_session="fetch")
+        session.execute(stmt)
+        session.commit()
+        count_inventory(unique_user)
+    if len(users_list) >= 5:
+        leader_rows = session.query(User_prices).order_by(User_prices.price).all()
+        n = 0
+        string_for_message = " "
+        for index, value in enumerate(leader_rows):
+            while n != 5:
+                string_for_message += "{index}: {user} ({price} руб)\n".format(index=(index + 1), user=value.user, price=value.price)
+                n += 1
+    else:
+        leader_rows = session.query(User_prices).order_by(User_prices.price).all()
+        n = 0
+        string_for_message = " "
+        for index, value in enumerate(leader_rows):
+            while n != len(users_list):
+                string_for_message += "{index}: {user} ({price} руб)\n".format(index=(index + 1), user=value.user, price=value.price)
+                n += 1
+    url = "https://i.redd.it/xknufjrmzy341.png"
+    icon_url = "https://cdn2.iconfinder.com/data/icons/popular-games-1/50/csgo_squircle-512.png"
+    author_price = count_inventory(author)
+    embed_message = discord.Embed(title=string_for_message, color=0xFFD700)
+    embed_message.set_author(name="ТОП ПОЛЬЗОВАТЕЛЕЙ ПО СТОИМОСТИ ИНВЕНТАРЯ:", icon_url=icon_url)
+    embed_message.add_field(name="{author}, ВАШ ИНВЕНТАРЬ СТОИТ:".format(author=author), value="{price} руб".format(price=author_price), inline=True)
+    embed_message.set_image(url=url)
+    await ctx.send(embed=embed_message)
+
+
+
+
 
 # Run the bot
 bot.run(discord_token)
