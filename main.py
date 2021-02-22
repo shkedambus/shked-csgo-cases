@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import re
 
 from chances_csgo import roll, get_item
-from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info
+from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info, add_user_info
 
 cases = ["The Wildfire Collection",
             "The eSports 2013 Winter Collection",
@@ -113,11 +113,9 @@ async def open_case(ctx, user_case=""):
             await ctx.send("Упс! Кажется вы ввели несуществующий кейс!")
             break;
 
-        # weapon_name = row.name + " " + "(" + row.quality + ")"
-        # time_opened = datetime.today().date()
-        # table_row = User_info(user=author, item=weapon_name, opened_at=time_opened)
-        # session.add(table_row)
-        # session.commit()
+        weapon_name = row.name + " " + "(" + row.quality + ")"
+        time_opened = datetime.today().date()
+        # add_user_info(author, weapon_name, time_opened)
 
         url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
 

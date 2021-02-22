@@ -9,7 +9,7 @@ engine = create_engine('sqlite:///csgo.db?check_same_thread=False')
 Base = declarative_base()
 
 class User_info(Base):
-    __tablename__ = 'user_items'
+    __tablename__ = 'user_info'
     id = Column(Integer, primary_key=True)
     user = Column(String)
     item = Column(String)
@@ -109,4 +109,9 @@ with open("response.json", "r", encoding="utf8") as json_file:
                         image_url=item_image,
                         inspect_url=inspect_url)
         session.add(new_row)
+    session.commit()
+
+def add_user_info(user, item, opened_at):
+    row = User_info(user=user, item=item, opened_at=opened_at)
+    session.add(row)
     session.commit()
