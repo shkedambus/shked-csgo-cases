@@ -20,5 +20,8 @@ def roll(dictionary):
 def get_item(case=None):
     weapon_rarity = roll(rarity)
     weapon_quality = roll(quality)
-    weapon_stattrack = roll(stattrack)
+    if roll(stattrack) == "True":
+        weapon_stattrack = True
+    else:
+        weapon_stattrack = False
     return weapon_rarity, weapon_quality, weapon_stattrack

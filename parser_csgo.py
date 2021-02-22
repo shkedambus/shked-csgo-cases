@@ -8,6 +8,18 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine('sqlite:///csgo.db?check_same_thread=False')
 Base = declarative_base()
 
+class Item_price(Base):
+    __tablename__ = 'csgo_prices'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    price = Column(Integer)
+
+    def __repr__(self):
+        return '''<Item(name={name},
+                     price={price}>'''\
+            .format(name=self.name,
+                    price=self.price)
+
 class CSGO_Item(Base):
     __tablename__ = 'csgo_items'
     id = Column(Integer, primary_key=True)
@@ -37,7 +49,20 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+with open("response_prices.json", "r", encoding="utf8") as json_file:
+    prices_dict = json.load(json_file)
+    prices = prices_dict["result"]["prices"]
+    for key, value in prices.items():
+        for val in value.keys():
+            if val == "7":
+                name_of_item = key
+                item_price = int(value[val]["avg"] * 74.04)
+                row = Item_price(name=name_of_item, price=item_price)
+                session.add(row)
+    session.commit()
+
 pattern = r"(★?[a-zA-Z0-9- ]* \| [a-zA-Z0-9- ]*) (\([a-zA-Z- ]*\))"
+pattern_2 = r"(★?[a-zA-Z0-9- ]* \| [a-zA-Z0-9- ]*)"
 
 with open("response.json", "r", encoding="utf8") as json_file:
     response_dict = json.load(json_file)
