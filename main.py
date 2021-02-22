@@ -114,8 +114,8 @@ async def open_case(ctx, user_case=""):
             break;
 
         weapon_name = row.name + " " + "(" + row.quality + ")"
-        time_opened = datetime.today().date()
-        add_user_info(author, weapon_name, time_opened)
+        time_opened = datetime.now()
+        add_user_info(str(author), str(weapon_name), str(time_opened))
 
         url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
 
