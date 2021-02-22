@@ -7,8 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import re
 
 from chances_csgo import roll, get_item
-from parser_csgo import CSGO_Item, Item_price, pattern_2
-from user_info import User_info
+from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info
 
 cases = ["The Wildfire Collection",
             "The eSports 2013 Winter Collection",
@@ -99,52 +98,26 @@ async def open_case(ctx, user_case=""):
     author = message.author
     weapon_rarity, weapon_quality, weapon_stattrack = get_item()
     # print(weapon_rarity, weapon_quality, weapon_stattrack)
-    if user_case not in cases and user_case != "":
-        await ctx.send("Упс! Кажется вы ввели несуществующий кейс!")
-    elif user_case in cases:
-        print(user_case)
-        row = session.query(CSGO_Item).filter(CSGO_Item.case == user_case)\
-            .filter(CSGO_Item.rarity == weapon_rarity) \
-            .filter(CSGO_Item.quality == weapon_quality) \
-            .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
-
-        weapon_name = row.name + " " + "(" + row.quality + ")"
-        time_opened = datetime.today()
-        table_row = User_info(user=author, item=weapon_name, opened_at=time_opened)
-        session.add(table_row)
-        session.commit()
-
-        url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
-
-        if weapon_stattrack:
-            weapon_stattrack = "★ StatTrak™"
+    for _ in range(1):
+        if user_case == "":
+            row = session.query(CSGO_Item)\
+                .filter(CSGO_Item.rarity == weapon_rarity)\
+                .filter(CSGO_Item.quality == weapon_quality)\
+                .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
+        elif user_case in cases:
+            row = session.query(CSGO_Item).filter(CSGO_Item.case == user_case)\
+                .filter(CSGO_Item.rarity == weapon_rarity) \
+                .filter(CSGO_Item.quality == weapon_quality) \
+                .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
         else:
-            weapon_stattrack = ""
+            await ctx.send("Упс! Кажется вы ввели несуществующий кейс!")
+            break;
 
-        my_embed = discord.Embed(title="{weapon_stattrak} {item}"
-                                 .format(item=row.name, weapon_stattrak=weapon_stattrack)
-                                 , color=rarity_color[weapon_rarity])
-        my_embed.add_field(name="КАЧЕСТВО & ФЛОТ:",
-                           value="{rarity} \n {flot}".format(rarity=rarity_translate[row.rarity]
-                                                             , flot=quality_translate[row.quality]), inline=True)
-        my_embed.add_field(name="ЦЕНА", value="{price} руб".format(price=get_price(row)))
-        my_embed.set_author(name="{author}, ты выбил из {case}:"
-                            .format(author=author, case=row.case),
-                            icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
-        my_embed.set_image(url=url)
-        await ctx.send(embed=my_embed)
-    else:
-        row = session.query(CSGO_Item)\
-            .filter(CSGO_Item.rarity == weapon_rarity)\
-            .filter(CSGO_Item.quality == weapon_quality)\
-            .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
-
-        weapon_name = row.name + " " + "(" + row.quality + ")"
-        time_opened = datetime.today()
-        table_row = User_info(user=author, item=weapon_name, opened_at=time_opened)
-        session.add(table_row)
-        session.commit()
-
+        # weapon_name = row.name + " " + "(" + row.quality + ")"
+        # time_opened = datetime.today()
+        # table_row = User_info(user=author, item=weapon_name, opened_at=time_opened)
+        # session.add(table_row)
+        # session.commit()
 
         url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
 
