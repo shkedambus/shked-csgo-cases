@@ -114,7 +114,7 @@ async def open_case(ctx, user_case=""):
             break;
 
         # weapon_name = row.name + " " + "(" + row.quality + ")"
-        # time_opened = datetime.today()
+        # time_opened = datetime.today().date()
         # table_row = User_info(user=author, item=weapon_name, opened_at=time_opened)
         # session.add(table_row)
         # session.commit()

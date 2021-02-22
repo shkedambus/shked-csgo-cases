@@ -9,7 +9,7 @@ engine = create_engine('sqlite:///csgo.db?check_same_thread=False')
 Base = declarative_base()
 
 class User_info(Base):
-    __tablename__ = 'user_info'
+    __tablename__ = 'user_items'
     id = Column(Integer, primary_key=True)
     user = Column(String)
     item = Column(String)
