@@ -25,7 +25,7 @@ class User_info(Base):
     id = Column(Integer, primary_key=True)
     user = Column(String)
     item = Column(String)
-    opened_at = Column(String)
+    opened_at = Column(DateTime)
 
     def __repr__(self):
         return '''<Item(user={user},
@@ -42,10 +42,8 @@ class Item_price(Base):
     price = Column(Integer)
 
     def __repr__(self):
-        return '''<Item(name={name},
-                     price={price}>'''\
-            .format(name=self.name,
-                    price=self.price)
+        return '''<Item(name={name}, price={price}>'''\
+            .format(name=self.name, price=self.price)
 
 class CSGO_Item(Base):
     __tablename__ = 'csgo_items'
@@ -83,13 +81,14 @@ with open("response_prices.json", "r", encoding="utf8") as json_file:
         for val in value.keys():
             if val == "7":
                 name_of_item = key
-                item_price = int(value[val]["avg"] * 74.04)
+                item_price = int(value[val]["avg"] * 73.76)
                 row = Item_price(name=name_of_item, price=item_price)
                 session.add(row)
     session.commit()
 
 pattern = r"(★?[a-zA-Z0-9- ]* \| [a-zA-Z0-9- ]*) (\([a-zA-Z- ]*\))"
 pattern_2 = r"(★?[a-zA-Z0-9- ]* \| [a-zA-Z0-9- ]*)"
+pattern_3 = r"\([a-zA-Z- ]*\)"
 
 with open("response.json", "r", encoding="utf8") as json_file:
     response_dict = json.load(json_file)

@@ -7,7 +7,9 @@ from sqlalchemy.orm import sessionmaker
 import re
 
 from chances_csgo import roll, get_item
-from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info, add_user_info, User_prices
+from parser_csgo import CSGO_Item, Item_price, pattern_2, User_info, add_user_info, User_prices, pattern_3
+
+skin_list = ["Souvenir P90 | Teardown (Well-Worn)"]
 
 cases = ["The Wildfire Collection",
             "The eSports 2013 Winter Collection",
@@ -81,15 +83,15 @@ quality_translate = {"Battle-Scarred":"Закалённый в боях",
            "Factory New":"Прямо с завода"}
 
 rarity_color = {"Mil-Spec Grade":0x0000FF,
-          "Restricted":0x800080,
+          "Restricted":0x8A2BE2,
           "Classified":0xFF00FF,
           "Covert":0xFF0000}
 #.filter(CSGO_Item.case == "The Operation Broken Fang Collection")\
 
 def get_price(row):
     correct_name = row.name + " " + "(" + row.quality + ")"
-    price_row = session.query(Item_price).filter(Item_price.name == correct_name).first()
-    return price_row.price
+    price_row = session.query(Item_price).filter(Item_price.name == correct_name).all()
+    return price_row[0].price
 
 def count_inventory(unique_user):
     inventory_price = 0
@@ -102,6 +104,17 @@ def count_inventory(unique_user):
     session.add(added_row)
     session.commit()
     return inventory_price
+
+def delete_items_from_database(skin_list):
+    for skin in skin_list:
+        skin_name = str(re.search(pattern_2, skin))
+        correct_quality = str(re.search(pattern_3, skin))
+        stmt = delete(CSGO_Item).where(CSGO_Item.name == skin_name).where(CSGO_Item.quality == correct_quality).execution_options(synchronize_session="fetch")
+        session.execute(stmt)
+        session.commit()
+        stmt_2 = delete(User_info).where(User_info.item == skin).execution_options(synchronize_session="fetch")
+        session.execute(stmt_2)
+        session.commit()
 
 
 # Commands
@@ -127,8 +140,8 @@ async def open_case(ctx, user_case=""):
             break;
 
         weapon_name = row.name + " " + "(" + row.quality + ")"
-        time_opened = datetime.now()
-        add_user_info(str(author), str(weapon_name), str(time_opened))
+        time_opened = datetime.today().date()
+        add_user_info(str(author), str(weapon_name), time_opened)
 
         url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
 
@@ -150,6 +163,7 @@ async def open_case(ctx, user_case=""):
 
 @bot.command()
 async def inventory_prices(ctx):
+    delete_items_from_database(skin_list)
     message = ctx.message
     author = message.author
     user_rows = session.query(User_info).all()
@@ -164,19 +178,19 @@ async def inventory_prices(ctx):
         session.commit()
         count_inventory(unique_user)
     if len(users_list) >= 5:
-        leader_rows = session.query(User_prices).order_by(User_prices.price).all()
+        leader_rows = session.query(User_prices).order_by(User_prices.price.desc()).all()
         n = 0
         string_for_message = " "
         for index, value in enumerate(leader_rows):
-            while n != 5:
+            if n != 5:
                 string_for_message += "{index}: {user} ({price} руб)\n".format(index=(index + 1), user=value.user, price=value.price)
                 n += 1
     else:
-        leader_rows = session.query(User_prices).order_by(User_prices.price).all()
+        leader_rows = session.query(User_prices).order_by(User_prices.price.desc()).all()
         n = 0
         string_for_message = " "
         for index, value in enumerate(leader_rows):
-            while n != len(users_list):
+            if n != len(users_list):
                 string_for_message += "{index}: {user} ({price} руб)\n".format(index=(index + 1), user=value.user, price=value.price)
                 n += 1
     url = "https://i.redd.it/xknufjrmzy341.png"
@@ -187,10 +201,6 @@ async def inventory_prices(ctx):
     embed_message.add_field(name="{author}, ВАШ ИНВЕНТАРЬ СТОИТ:".format(author=author), value="{price} руб".format(price=author_price), inline=True)
     embed_message.set_image(url=url)
     await ctx.send(embed=embed_message)
-
-
-
-
 
 # Run the bot
 bot.run(discord_token)
