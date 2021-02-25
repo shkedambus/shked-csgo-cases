@@ -8,6 +8,18 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine('sqlite:///csgo.db?check_same_thread=False')
 Base = declarative_base()
 
+class User_items(Base):
+    __tablename__ = 'user_items'
+    id = Column(Integer, primary_key=True)
+    item = Column(String)
+    price = Column(Integer)
+
+    def __repr__(self):
+        return '''<Item(item={item},
+                     price={price}>'''\
+            .format(item=self.item,
+                    price=self.price)
+
 class User_prices(Base):
     __tablename__ = 'user_prices'
     id = Column(Integer, primary_key=True)
