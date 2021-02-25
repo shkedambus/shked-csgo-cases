@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -116,50 +116,70 @@ def delete_items_from_database(skin_list):
         session.execute(stmt_2)
         session.commit()
 
+def check_limit(person):
+    if str(person) == "Dimka#8435":
+        return "True"
+    else:
+        last_time_row = session.query(User_info).filter(User_info.user == str(person)).order_by(User_info.opened_at.desc()).first()
+        now = datetime.today()
+        if last_time_row is None or now >= (last_time_row.opened_at + timedelta(minutes=14)):
+            return "True"
+        else:
+            return (last_time_row.opened_at + timedelta(minutes=14)) - timedelta(minutes=now.minute)
 
 # Commands
 @bot.command()
 async def open_case(ctx, user_case=""):
     message = ctx.message
     author = message.author
-    weapon_rarity, weapon_quality, weapon_stattrack = get_item()
-    # print(weapon_rarity, weapon_quality, weapon_stattrack)
-    for _ in range(1):
-        if user_case == "":
-            row = session.query(CSGO_Item)\
-                .filter(CSGO_Item.rarity == weapon_rarity)\
-                .filter(CSGO_Item.quality == weapon_quality)\
-                .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
-        elif user_case in cases:
-            row = session.query(CSGO_Item).filter(CSGO_Item.case == user_case)\
-                .filter(CSGO_Item.rarity == weapon_rarity) \
-                .filter(CSGO_Item.quality == weapon_quality) \
-                .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
-        else:
-            await ctx.send("Упс! Кажется вы ввели несуществующий кейс!")
-            break;
+    check_limit(author)
+    if check_limit(author) == "True":
+        weapon_rarity, weapon_quality, weapon_stattrack = get_item()
+        for _ in range(1):
+            if user_case == "":
+                row = session.query(CSGO_Item)\
+                    .filter(CSGO_Item.rarity == weapon_rarity)\
+                    .filter(CSGO_Item.quality == weapon_quality)\
+                    .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
+            elif user_case in cases:
+                row = session.query(CSGO_Item).filter(CSGO_Item.case == user_case)\
+                    .filter(CSGO_Item.rarity == weapon_rarity) \
+                    .filter(CSGO_Item.quality == weapon_quality) \
+                    .filter(CSGO_Item.stattrak == weapon_stattrack).order_by(func.random()).first()
+            else:
+                embed_message = discord.Embed(title='Упс! {author}, кейса "{user_case}" к сожалению не существует'.format(author=author, user_case=user_case), color=0xFFF000)
+                embed_message.set_image(url="https://i.pinimg.com/originals/15/8b/ed/158bed9819e4fccf7e18a5eeeaf79c6b.png")
+                embed_message.set_author(name="Ошибка!", icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
+                await ctx.send(embed=embed_message)
+                break;
 
-        weapon_name = row.name + " " + "(" + row.quality + ")"
-        time_opened = datetime.today().date()
-        add_user_info(str(author), str(weapon_name), time_opened)
+            weapon_name = row.name + " " + "(" + row.quality + ")"
+            time_opened = datetime.today()
+            add_user_info(str(author), str(weapon_name), time_opened)
 
-        url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
+            url = "https://community.cloudflare.steamstatic.com/economy/image/" + row.image_url + "/360fx360f"
 
-        if weapon_stattrack:
-            weapon_stattrack = "★ StatTrak™"
-        else:
-            weapon_stattrack = ""
+            if weapon_stattrack:
+                weapon_stattrack = "★ StatTrak™"
+            else:
+                weapon_stattrack = ""
 
-        my_embed = discord.Embed(title="{weapon_stattrak} {item}"
-                                 .format(item=row.name, weapon_stattrak=weapon_stattrack)
-                                 , color=rarity_color[weapon_rarity])
-        my_embed.add_field(name="КАЧЕСТВО & ФЛОТ:", value="{rarity} \n {flot}".format(rarity=rarity_translate[row.rarity]
-                                            , flot=quality_translate[row.quality]), inline=True)
-        my_embed.add_field(name="ЦЕНА", value="{price} руб".format(price=get_price(row)))
-        my_embed.set_author(name="{author}, ты выбил из {case}:"
-                                 .format(author=author, case=row.case), icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
-        my_embed.set_image(url=url)
-        await ctx.send(embed=my_embed)
+            my_embed = discord.Embed(title="{weapon_stattrak} {item}"
+                                     .format(item=row.name, weapon_stattrak=weapon_stattrack)
+                                     , color=rarity_color[weapon_rarity])
+            my_embed.add_field(name="КАЧЕСТВО & ФЛОТ:", value="{rarity} \n {flot}".format(rarity=rarity_translate[row.rarity]
+                                                , flot=quality_translate[row.quality]), inline=True)
+            my_embed.add_field(name="ЦЕНА", value="{price} руб".format(price=get_price(row)))
+            my_embed.set_author(name="{author}, ты выбил из {case}:"
+                                     .format(author=author, case=row.case), icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
+            my_embed.set_image(url=url)
+            await ctx.send(embed=my_embed)
+    else:
+        my_embed_message = discord.Embed(title="{author}, сможете открыть следующий кейс через {min} минут {sec} секунд"
+                                         .format(author=author, min=str(check_limit(author).minute), sec=str(check_limit(author).second)), color=0x6BFF33)
+        my_embed_message.set_image(url="https://www.rawshorts.com/freeicons/wp-content/uploads/2017/01/green_edupictclock_1484335194-1.png")
+        my_embed_message.set_author(name="Превышение лимита открытия кейсов!", icon_url="https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png")
+        await ctx.send(embed=my_embed_message)
 
 @bot.command()
 async def inventory_prices(ctx):
@@ -194,7 +214,7 @@ async def inventory_prices(ctx):
                 string_for_message += "{index}: {user} ({price} руб)\n".format(index=(index + 1), user=value.user, price=value.price)
                 n += 1
     url = "https://i.redd.it/xknufjrmzy341.png"
-    icon_url = "https://cdn2.iconfinder.com/data/icons/popular-games-1/50/csgo_squircle-512.png"
+    icon_url = "https://csgocases.com/uploads/gallery/oryginal/dedc1450e94dabc3e7593a3b51e20833bba834d6.png"
     author_price = count_inventory(author)
     embed_message = discord.Embed(title=string_for_message, color=0xFFD700)
     embed_message.set_author(name="ТОП ПОЛЬЗОВАТЕЛЕЙ ПО СТОИМОСТИ ИНВЕНТАРЯ:", icon_url=icon_url)
